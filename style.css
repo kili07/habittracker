@@ -1,0 +1,427 @@
+/* ═══════════════════════════════════════════════════════════════
+   Habits — Stylesheet
+
+   Aufbau:
+   1. Design-Tokens (Maße, Typo, Bewegung) — themenunabhängig
+   2. Themes, die nur Tokens überschreiben
+   3. Komponenten, die ausschließlich Tokens benutzen
+
+   Regel für Änderungen: in den Komponenten stehen keine festen Farben.
+   Wer eine neue Farbe braucht, legt ein Token an und bedient alle Themes.
+   Das gilt auch für die Habit-Farben (--hc-*): jede Farbe der Palette in
+   app.js braucht hier in jedem Theme ein Token.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── 1. Tokens ──────────────────────────────────────────────── */
+:root{
+  --pad:20px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+
+  /* Radien — je Theme überschreibbar, das ist ein guter Teil des Charakters */
+  --r-xs:6px; --r-sm:10px; --r:14px; --r-lg:18px; --r-xl:22px; --r-pill:999px;
+
+  /* Nur Systemschriften: es wird nichts nachgeladen, die App bleibt offline-fähig */
+  --font-ui:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",system-ui,sans-serif;
+  --font-display:var(--font-ui);
+  --font-num:var(--font-ui);
+
+  /* Untere Leiste. Grundfall flach am Rand: sie deckt den sicheren Bereich
+     (Home-Indikator) selbst mit ab, deshalb --tab-safe. */
+  --tab-h:66px;
+  --tab-bottom:0px;
+  --tab-safe:env(safe-area-inset-bottom, 0px);
+  --tab-side:0px;
+  --tab-radius:0px;
+  --tab-maxw:none;
+
+  /* Abhak-Zeile: groß genug, um sie im Vorbeigehen mit dem Daumen zu treffen */
+  --row-h:64px;
+  --chk:30px;
+
+  --ease:cubic-bezier(.2,.8,.2,1);
+  --fast:.14s; --mid:.22s;
+}
+
+/* ── 2. Themes ──────────────────────────────────────────────── */
+/* Gilt für beide Fälle: ohne data-theme und mit data-theme="dark" */
+:root,
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0b0e14; --surface:#151a24; --surface-2:#1c2230; --seg-on:#2b3345; --line:#242b39;
+  --text:#e9edf5; --text-2:#a3adc0; --muted:#6b7689;
+  --accent:#8c9bff; --on-accent:#0b0e14; --danger:#ff7070;
+  --ring:#353e51;                       /* leerer Abhak-Kreis */
+  --press:rgba(255,255,255,.045);       /* Zeile unter dem Finger */
+  --scrim:rgba(3,5,10,.62);
+  --tab-bg:rgba(24,29,41,.88);
+  --tab-shadow:0 8px 28px rgba(0,0,0,.45);
+  --shadow:0 -8px 40px rgba(0,0,0,.5);
+  --toast-bg:#e9edf5; --toast-text:#0b0e14;
+  --seg-shadow:transparent;
+  --cell:#1d2330; --cell-free:#131822;   /* Heatmap: offen / frei oder vor dem Start */
+
+  /* Habit-Palette — hell genug für den dunklen Grund, das Häkchen darauf in --on-hc */
+  --hc-green:#6fcf97; --hc-teal:#4fd1c5; --hc-blue:#6ea8fe;
+  --hc-violet:#b197fc; --hc-rose:#f783ac; --hc-amber:#f5b85a;
+  --on-hc:#0b0e14;
+}
+
+/* FALLE: :root matcht <html> unabhängig von data-theme. Werte, die NUR für
+   dark gelten, gehören deshalb hierher — nicht in den Block oben, sonst
+   lecken sie in alle anderen Themes. Die schwebende Leiste hält selbst
+   Abstand zum Home-Indikator, deshalb steckt der sichere Bereich in
+   --tab-bottom und nicht in --tab-safe. */
+:root:not([data-theme]),
+:root[data-theme="dark"]{
+  --tab-bottom:calc(12px + env(safe-area-inset-bottom, 0px));
+  --tab-side:14px; --tab-radius:var(--r-pill); --tab-safe:0px; --tab-maxw:400px;
+}
+
+/* Hell: jedes Farb-Token aus dem Block oben braucht hier einen eigenen Wert,
+   sonst leckt das dunkle durch. Die Leiste liegt flach am Rand (Grundfall
+   aus den Tokens) und deckt den Home-Indikator mit ab. */
+:root[data-theme="light"]{
+  color-scheme:light;
+  --bg:#f5f6f8; --surface:#ffffff; --surface-2:#eceef2; --seg-on:#ffffff; --line:#e0e4eb;
+  --text:#151922; --text-2:#525c6e; --muted:#8a93a3;
+  --accent:#4f5bd5; --on-accent:#ffffff; --danger:#d23c3c;
+  --ring:#cdd3dd;
+  --press:rgba(21,25,34,.05);
+  --scrim:rgba(21,25,34,.34);
+  --tab-bg:rgba(255,255,255,.92);
+  --tab-shadow:0 -1px 0 #e0e4eb;
+  --shadow:0 -8px 40px rgba(21,25,34,.16);
+  --toast-bg:#151922; --toast-text:#ffffff;
+  --seg-shadow:rgba(21,25,34,.14);
+  --cell:#e3e7ed; --cell-free:#eff1f4;
+
+  /* Satter als im Dunklen, damit Punkt und Heatmap auf Weiß stehen; Häkchen weiß */
+  --hc-green:#1f9d57; --hc-teal:#0f978a; --hc-blue:#2f6fdf;
+  --hc-violet:#7b5cd6; --hc-rose:#d4447d; --hc-amber:#d4870c;
+  --on-hc:#ffffff;
+}
+
+/* ── 3. Basis ───────────────────────────────────────────────── */
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--text);
+  font:15px/1.45 var(--font-ui);
+  padding-bottom:calc(var(--tab-h) + var(--tab-safe) + var(--tab-bottom) + 16px);
+  overscroll-behavior-y:none;          /* kein Gummiband-Scrollen der Seite */
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+button:disabled{cursor:default}
+.hidden{display:none !important}
+.muted{color:var(--muted);font-weight:400}
+
+/* Zahlen immer mit fester Ziffernbreite, sonst zappeln Zähler beim Abhaken. */
+.num,.day-prog,.hsub{font-family:var(--font-num); font-variant-numeric:tabular-nums}
+
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button:focus:not(:focus-visible){outline:none}
+
+/* ── Kopf ───────────────────────────────────────────────────── */
+.topbar{
+  display:flex; align-items:center; justify-content:space-between; gap:var(--sp-3);
+  padding:calc(env(safe-area-inset-top) + 18px) var(--pad) 2px;
+}
+.topbar h1{margin:0;font:700 30px/1.15 var(--font-display);letter-spacing:-.02em}
+
+.icon-btn{
+  flex:none; width:44px; height:44px; display:grid; place-items:center;
+  background:none; border:0; border-radius:50%; color:var(--text-2);
+  transition:opacity var(--fast), background var(--fast);
+}
+.icon-btn svg{width:22px;height:22px}
+.icon-btn:active:not(:disabled){background:var(--press)}
+.icon-btn:disabled{opacity:.22}
+.topbar .icon-btn{margin-right:-10px;position:relative}
+/* Backup überfällig: ein Punkt am Zahnrad, mehr Aufdringlichkeit braucht es nicht */
+.topbar .icon-btn.badge::after{
+  content:""; position:absolute; top:9px; right:9px; width:8px; height:8px; border-radius:50%;
+  background:var(--danger); box-shadow:0 0 0 2px var(--bg);
+}
+
+/* ── Heute: Tageskopf ───────────────────────────────────────── */
+.day-nav{
+  display:flex; align-items:center; gap:var(--sp-1);
+  padding:0 calc(var(--pad) - 10px) 0 var(--pad); margin:0 0 var(--sp-4);
+}
+.day-mid{flex:1;min-width:0}
+.day-date{color:var(--text-2);font-size:15px}
+.day-prog{color:var(--muted);font-size:14px}
+.day-prog.all{color:var(--accent)}
+
+/* ── Heute: Liste ───────────────────────────────────────────── */
+.hlist{display:flex;flex-direction:column;gap:2px;padding:0 calc(var(--pad) - 12px)}
+
+/* Keine Karten, keine Linien: die Zeile trägt sich über Luft und Farbe. */
+.hrow{
+  display:flex; align-items:center; gap:14px; width:100%;
+  min-height:var(--row-h); padding:10px 12px;
+  background:none; border:0; border-radius:var(--r); text-align:left;
+  user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;
+  touch-action:manipulation;
+  transition:background var(--fast);
+}
+.hrow:active{background:var(--press)}
+.hdot{flex:none;width:10px;height:10px;border-radius:50%;background:var(--c)}
+.htext{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.hname{font-size:17px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  transition:color var(--mid)}
+.hsub{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hsub svg{width:11px;height:11px;fill:var(--c);vertical-align:-1px;margin-right:3px}
+.hrow.done .hname{color:var(--text-2)}
+
+/* Abhak-Kreis: Ring → gefüllte Scheibe in der Habit-Farbe → Häkchen zeichnet sich */
+.chk{
+  position:relative; flex:none; width:var(--chk); height:var(--chk);
+  display:grid; place-items:center;
+  border:2px solid var(--ring); border-radius:50%;
+  transition:transform var(--fast) var(--ease), border-color var(--mid);
+}
+.chk::before{
+  content:""; position:absolute; inset:-2px; border-radius:50%;
+  background:var(--c); transform:scale(0);
+}
+.chk svg{position:relative;width:18px;height:18px;overflow:visible}
+.chk path{fill:none;stroke:var(--on-hc);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:1;stroke-dashoffset:1}
+.hrow:active .chk{transform:scale(.9)}
+.hrow.done .chk{border-color:var(--c)}
+.hrow.done .chk::before{transform:scale(1)}
+.hrow.done .chk path{stroke-dashoffset:0}
+
+/* Nur die gerade angetippte Zeile animiert — die Liste wird bei jedem Tipp neu
+   gezeichnet, @keyframes laufen beim Einfügen, Transitions würden es nicht. */
+.hrow.just.done .chk{animation:chk-pop .38s var(--ease)}
+.hrow.just.done .chk::before{animation:chk-fill .26s var(--ease)}
+.hrow.just.done .chk path{animation:chk-tick .4s var(--ease)}
+.hrow.just:not(.done) .chk::before{animation:chk-unfill .18s ease-in}
+@keyframes chk-pop{45%{transform:scale(1.14)}}
+@keyframes chk-fill{from{transform:scale(.15);opacity:.5}}
+@keyframes chk-tick{0%,35%{stroke-dashoffset:1}100%{stroke-dashoffset:0}}
+@keyframes chk-unfill{from{transform:scale(1)}to{transform:scale(0)}}
+
+/* Beim Blättern gleitet die Liste aus der Richtung, aus der der Tag kommt */
+.slide-prev{animation:slide-prev var(--mid) var(--ease)}
+.slide-next{animation:slide-next var(--mid) var(--ease)}
+@keyframes slide-prev{from{transform:translateX(-26px);opacity:.2}}
+@keyframes slide-next{from{transform:translateX(26px);opacity:.2}}
+
+/* Nicht fällig: eingeklappt, gedämpft, aber weiter antippbar */
+.nd-toggle{
+  display:flex; align-items:center; gap:6px; min-height:44px;
+  margin:var(--sp-5) 0 0; padding:0 var(--pad);
+  background:none; border:0; color:var(--muted); font-size:14px;
+}
+.nd-toggle svg{width:14px;height:14px;transition:transform var(--mid) var(--ease)}
+.nd-toggle[aria-expanded="true"] svg{transform:rotate(90deg)}
+.hlist.nd .hrow:not(.done) .hname{color:var(--text-2)}
+.hlist.nd .hdot{opacity:.55}
+
+.nothing{padding:var(--sp-2) var(--pad) 0;color:var(--text-2);margin:0}
+
+/* Leerer Zustand */
+.empty{padding:16vh var(--pad) 0;text-align:center}
+.empty p{margin:0 auto var(--sp-5);max-width:28ch;color:var(--text-2);font-size:16px}
+
+/* ── Knöpfe ─────────────────────────────────────────────────── */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:var(--sp-2);
+  min-height:48px; padding:0 var(--sp-5);
+  background:var(--surface-2); border:0; border-radius:var(--r); font-size:16px; font-weight:500;
+}
+.btn:active{filter:brightness(1.12)}
+.btn-primary{background:var(--accent);color:var(--on-accent)}
+.btn-danger{background:var(--danger);color:var(--on-accent)}
+.btn-ghost{background:none;color:var(--text-2)}
+.btn-ghost.danger{color:var(--danger)}
+.btn-block{display:flex;width:100%}
+
+/* ── Untere Leiste ──────────────────────────────────────────── */
+.tabbar{
+  position:fixed; z-index:20; left:0; right:0; bottom:var(--tab-bottom);
+  width:calc(100% - 2 * var(--tab-side)); max-width:var(--tab-maxw); margin:0 auto;
+  height:calc(var(--tab-h) + var(--tab-safe)); padding-bottom:var(--tab-safe);
+  display:grid; grid-template-columns:1fr auto 1fr; align-items:center;
+  background:var(--tab-bg); border-radius:var(--tab-radius); box-shadow:var(--tab-shadow);
+  -webkit-backdrop-filter:blur(16px); backdrop-filter:blur(16px);
+}
+.tabbar button{
+  height:100%; min-width:44px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+  background:none; border:0; color:var(--muted); font-size:11px; font-weight:500;
+  transition:color var(--fast);
+}
+.tabbar button svg{width:24px;height:24px}
+.tabbar button.on{color:var(--text)}
+.tabbar .fab-tab{
+  width:50px; height:50px; margin:0 var(--sp-6); border-radius:50%;
+  background:var(--accent); color:var(--on-accent);
+  transition:transform var(--fast) var(--ease);
+}
+.tabbar .fab-tab:active{transform:scale(.92)}
+
+/* ── Sheet ──────────────────────────────────────────────────── */
+.scrim{position:fixed;inset:0;z-index:40;background:var(--scrim);animation:fade var(--mid)}
+.sheet{
+  position:fixed; z-index:41; left:0; right:0; bottom:0; margin:0 auto; max-width:560px;
+  max-height:calc(100% - env(safe-area-inset-top, 0px) - 28px);
+  display:flex; flex-direction:column;
+  background:var(--surface); border-radius:var(--r-xl) var(--r-xl) 0 0; box-shadow:var(--shadow);
+  padding-bottom:env(safe-area-inset-bottom, 0px);
+  animation:sheet-up .26s var(--ease);
+}
+.sheet-grip{flex:none;width:36px;height:4px;margin:8px auto 0;border-radius:2px;background:var(--line)}
+.sheet-head{flex:none;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:2px 6px}
+.sheet-head strong{font-size:16px;font-weight:600;text-align:center}
+.sheet-head .link:first-child{justify-self:start}
+.sheet-head .link:last-child{justify-self:end}
+.link{min-height:44px;padding:0 var(--sp-3);background:none;border:0;color:var(--accent);font-size:16px}
+.link.strong{font-weight:600}
+.sheet-body{overflow-y:auto;overscroll-behavior:contain;padding:var(--sp-3) var(--pad) var(--sp-6)}
+@keyframes fade{from{opacity:0}}
+@keyframes sheet-up{from{transform:translateY(40%);opacity:0}}
+
+.dlg-t{margin:var(--sp-2) 0 var(--sp-5);color:var(--text-2);font-size:16px}
+
+/* ── Formular ───────────────────────────────────────────────── */
+.fld{margin:0 0 var(--sp-6)}
+.fld-l{display:block;margin:0 0 var(--sp-2);color:var(--muted);font-size:13px}
+.inp{
+  width:100%; min-height:50px; padding:0 14px;
+  background:var(--surface-2); border:1.5px solid transparent; border-radius:var(--r);
+  font-size:17px; outline:none;
+}
+.inp:focus{border-color:var(--accent)}
+.inp::placeholder{color:var(--muted)}
+
+.seg{display:flex;gap:4px;padding:4px;background:var(--surface-2);border-radius:var(--r)}
+.seg button{
+  flex:1; min-height:44px; padding:0 var(--sp-1);
+  background:none; border:0; border-radius:var(--r-sm); color:var(--text-2); font-size:15px;
+  transition:background var(--fast), color var(--fast);
+}
+.seg button.on{background:var(--seg-on);color:var(--text);font-weight:500;box-shadow:0 1px 3px var(--seg-shadow)}
+
+/* Tage und Wochenziel: sieben gleich breite Felder, Auswahl in der Habit-Farbe */
+.pick7{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.pick7 button{
+  min-height:44px; padding:0; background:var(--surface-2); border:0; border-radius:var(--r-sm);
+  color:var(--text-2); font-size:15px; font-variant-numeric:tabular-nums;
+  transition:background var(--fast), color var(--fast);
+}
+.pick7 button.on{background:var(--c, var(--accent));color:var(--on-hc);font-weight:600}
+.fld-hint{margin:var(--sp-2) 0 0;color:var(--muted);font-size:13px}
+
+/* Sechs Farben passen so auch bei 320 px Breite in eine Reihe */
+.swatches{display:grid;grid-template-columns:repeat(6,44px);justify-content:space-between;max-width:340px}
+.swatches button{
+  width:44px; height:44px; border:0; border-radius:50%; background:var(--sw);
+  transition:box-shadow var(--fast), transform var(--fast) var(--ease);
+}
+.swatches button:active{transform:scale(.92)}
+.swatches button.on{box-shadow:0 0 0 3px var(--surface), 0 0 0 5px var(--text)}
+
+.form-foot{display:flex;gap:var(--sp-2);margin-top:var(--sp-2);padding-top:var(--sp-4);border-top:1px solid var(--line)}
+.form-foot .btn{flex:1}
+
+/* ── Heute: Tagebuchzeile ───────────────────────────────────── */
+.note-row{
+  display:flex; align-items:flex-start; gap:14px;
+  width:calc(100% - 2 * (var(--pad) - 12px)); min-height:56px;
+  margin:var(--sp-5) calc(var(--pad) - 12px) 0; padding:16px 12px;
+  background:none; border:0; border-radius:var(--r); text-align:left; color:var(--muted);
+  transition:background var(--fast);
+}
+.note-row:active{background:var(--press)}
+.note-row svg{flex:none;width:20px;height:20px;margin:1px 0 0 -5px}
+.note-row.has{color:var(--text-2)}
+.note-row.has svg{color:var(--muted)}
+/* Höchstens drei Zeilen; der ganze Text steht im Sheet und im Tagebuch */
+.note-t{flex:1;min-width:0;white-space:pre-line;overflow:hidden;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+
+/* ── Tagebuch-Sheet ─────────────────────────────────────────── */
+.note-day{margin:0 0 var(--sp-3);color:var(--text-2)}
+.note-in{display:block;min-height:150px;padding:12px 14px;line-height:1.45;resize:none}
+.note-cnt:empty{display:none}
+
+/* ── Verlauf ────────────────────────────────────────────────── */
+.vseg{margin:var(--sp-2) var(--pad) var(--sp-6)}
+.sec{margin:var(--sp-6) var(--pad) var(--sp-3);font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.02em}
+
+.hh{padding:0 var(--pad);margin:0 0 36px}
+.hh-head{display:flex;align-items:center;gap:10px;margin:0 0 var(--sp-3)}
+.hh-name{flex:1;min-width:0;font-size:17px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hh-freq{flex:none;font-size:13px;color:var(--muted)}
+.hh-arch{opacity:.6}
+
+.hm{display:block;width:100%;height:auto}
+.hm text{font:11px var(--font-ui);fill:var(--muted)}
+.hm .hm-c{fill:var(--cell)}
+.hm .hm-f{fill:var(--cell-free)}
+.hm .hm-d{fill:var(--c)}
+.hm .hm-t{stroke:var(--text-2);stroke-width:1.5}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-3);margin-top:var(--sp-4)}
+.stat-v{display:block;font:600 21px/1.2 var(--font-num);font-variant-numeric:tabular-nums}
+.stat-v small{margin-left:3px;font-size:13px;font-weight:400;color:var(--text-2)}
+.stat-l{display:block;margin-top:2px;font-size:12px;color:var(--muted)}
+
+.note-new{padding:0 var(--pad) var(--sp-2)}
+.note-new svg{width:18px;height:18px}
+.nentry{
+  display:block; width:calc(100% - 2 * (var(--pad) - 12px)); margin:0 calc(var(--pad) - 12px);
+  padding:12px; background:none; border:0; border-radius:var(--r); text-align:left;
+  transition:background var(--fast);
+}
+.nentry:active{background:var(--press)}
+.nentry-d{display:flex;align-items:center;gap:10px;margin-bottom:3px;font-size:13px;color:var(--muted)}
+.ndots{display:flex;gap:4px}
+.ndot{width:7px;height:7px;border-radius:50%;background:var(--c)}
+.nentry-t{display:block;white-space:pre-line;overflow-wrap:anywhere;font-size:15px}
+
+/* ── Einstellungen ──────────────────────────────────────────── */
+.mrow{display:flex;align-items:center;gap:2px;min-height:48px}
+.mrow-main{
+  flex:1; min-width:0; display:flex; align-items:center; gap:12px; min-height:48px;
+  padding:0; background:none; border:0; text-align:left;
+}
+.mname{flex:1;min-width:0;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mfreq{flex:none;max-width:40%;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrow .icon-btn svg{width:20px;height:20px}
+.mrow.arch .mname{color:var(--text-2)}
+.mrow .btn-ghost{min-height:44px;padding:0 var(--sp-2);font-size:15px;color:var(--accent)}
+.st-arch{margin-top:var(--sp-4)}
+.fld-hint.warn{color:var(--danger)}
+.st-backup{margin:0 0 var(--sp-3)}
+.btn-row{display:flex;gap:var(--sp-2)}
+.btn-row .btn{flex:1}
+.about{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);color:var(--text-2)}
+
+/* ── Platzhalter ────────────────────────────────────────────── */
+.soon{padding:12vh var(--pad) 0;text-align:center;color:var(--muted)}
+
+/* ── Toast ──────────────────────────────────────────────────── */
+.toast{
+  position:fixed; z-index:60; left:50%; transform:translateX(-50%);
+  bottom:calc(var(--tab-h) + var(--tab-safe) + var(--tab-bottom) + 14px);
+  max-width:calc(100% - 2 * var(--pad)); padding:10px 16px;
+  background:var(--toast-bg); color:var(--toast-text); border-radius:var(--r-pill);
+  font-size:14px; font-weight:500; text-align:center;
+  animation:toast-in var(--mid) var(--ease);
+}
+@keyframes toast-in{from{opacity:0;transform:translate(-50%,8px)}}
+
+/* ── Breitere Bildschirme ───────────────────────────────────── */
+@media(min-width:560px){
+  main,.topbar{max-width:560px;margin:0 auto}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;
+    animation-iteration-count:1 !important; transition-duration:.01ms !important}
+}

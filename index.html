@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<!-- interactive-widget: die Tastatur verkleinert das Layout, statt sich über
+     das Sheet zu legen — sonst verschwindet das Namensfeld unter ihr. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#0b0e14">
+<title>Habits</title>
+<script>
+/* Theme setzen, bevor das Stylesheet greift — sonst blitzt beim Start kurz das
+   Standard-Theme auf. Eigener, winziger Schlüssel: den kompletten Datensatz
+   hier zu parsen würde den Start bremsen. app.js hält ihn synchron. */
+(function () {
+  try {
+    var t = localStorage.getItem('habits.theme');
+    if (t) document.documentElement.dataset.theme = t;
+  } catch (e) { /* privater Modus o.ä. — dann bleibt es beim Standard */ }
+})();
+</script>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <h1 id="viewTitle">Heute</h1>
+  <button class="icon-btn" id="btnSettings" aria-label="Einstellungen">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round">
+      <path d="M18.89 9.89L21.42 10.17L21.42 13.83L18.89 14.11L18.36 15.38L19.96 17.37L17.37 19.96L15.38 18.36L14.11 18.89L13.83 21.42L10.17 21.42L9.89 18.89L8.62 18.36L6.63 19.96L4.04 17.37L5.64 15.38L5.11 14.11L2.58 13.83L2.58 10.17L5.11 9.89L5.64 8.62L4.04 6.63L6.63 4.04L8.62 5.64L9.89 5.11L10.17 2.58L13.83 2.58L14.11 5.11L15.38 5.64L17.37 4.04L19.96 6.63L18.36 8.62Z"/>
+      <circle cx="12" cy="12" r="3"/>
+    </svg>
+  </button>
+</header>
+
+<main id="main">
+  <section class="view" id="view-heute"></section>
+  <section class="view hidden" id="view-verlauf"></section>
+</main>
+
+<nav class="tabbar">
+  <button data-nav="heute" class="on">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="9"/><path d="M8 12.4l2.8 2.8 5.2-5.6"/>
+    </svg><span>Heute</span>
+  </button>
+  <button id="btnNew" class="fab-tab" aria-label="Neue Gewohnheit">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+      <path d="M12 5v14M5 12h14"/>
+    </svg>
+  </button>
+  <button data-nav="verlauf">
+    <svg viewBox="0 0 24 24" fill="currentColor">
+      <rect x="3" y="3" width="5" height="5" rx="1.2"/><rect x="9.5" y="3" width="5" height="5" rx="1.2" opacity=".45"/><rect x="16" y="3" width="5" height="5" rx="1.2"/>
+      <rect x="3" y="9.5" width="5" height="5" rx="1.2" opacity=".45"/><rect x="9.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="16" y="9.5" width="5" height="5" rx="1.2"/>
+      <rect x="3" y="16" width="5" height="5" rx="1.2"/><rect x="9.5" y="16" width="5" height="5" rx="1.2"/><rect x="16" y="16" width="5" height="5" rx="1.2" opacity=".45"/>
+    </svg><span>Verlauf</span>
+  </button>
+</nav>
+
+<!-- Sheet: trägt alle Formulare und Dialoge -->
+<div class="scrim hidden" id="scrim"></div>
+<div class="sheet hidden" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+  <div class="sheet-grip"></div>
+  <div class="sheet-head">
+    <button class="link" id="sheetCancel">Abbrechen</button>
+    <strong id="sheetTitle"></strong>
+    <button class="link strong" id="sheetSave">Sichern</button>
+  </div>
+  <div class="sheet-body" id="sheetBody"></div>
+</div>
+
+<div class="toast hidden" id="toast" role="status" aria-live="polite"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
