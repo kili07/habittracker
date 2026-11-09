@@ -1,6 +1,6 @@
 /* Service Worker — App offline verfügbar halten.
    Bei jeder Änderung an den Dateien CACHE hochzählen. */
-const CACHE = 'habits-v4';
+const CACHE = 'habits-v5';
 const ASSETS = [
   './', './index.html', './style.css', './app.js', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png',
