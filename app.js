@@ -8,15 +8,15 @@
 const KEY = 'habits.v1';
 /* Bei jeder Änderung hochzählen — wird in den Einstellungen angezeigt, damit
    sich auf dem Handy prüfen lässt, welche Fassung wirklich läuft. */
-const APP_VERSION = '1.0.1';
+const APP_VERSION = '1.1.0';
 
 const THEME_KEY = 'habits.theme';
 /* `bar` ist die Hintergrundfarbe des Themes und landet im
    <meta name="theme-color">, damit die Systemleiste des Handys mitzieht —
    muss mit --bg in style.css übereinstimmen. */
 const THEMES = {
-  dark:  { label: 'Dunkel', bar: '#0b0e14' },
-  light: { label: 'Hell',   bar: '#f5f6f8' },
+  dark:  { label: 'Dunkel', bar: '#111829' },
+  light: { label: 'Hell',   bar: '#eef1f6' },
 };
 
 /* Habit-Palette. Gespeichert wird nur der Schlüssel; die Farbe selbst kommt
@@ -43,7 +43,7 @@ const blank = () => ({
   checkins: {},       // { 'YYYY-MM-DD': [habitId, …] } — der Tag nach Tagesgrenze, nicht das Kalenderdatum der Uhr
   notes: {},          // { 'YYYY-MM-DD': 'Text' } — ein kurzer Tagebucheintrag je Tag, gleiche Tagesgrenze
   dayStart: 3,        // Stunde, ab der ein neuer Tag beginnt: wer um 0:30 abhakt, meint den Vortag
-  theme: 'dark',
+  theme: 'light',
   setup: false,       // erste Gewohnheit angelegt? Danach einmal der Bedienungshinweis
   lastBackup: null,   // ISO-Zeitpunkt des letzten Exports
 });
@@ -478,9 +478,10 @@ function renderHeute() {
   for (const h of habits) (isDue(h, setOf(h.id), day) ? due : rest).push(h);
   const doneN = due.filter((h) => setOf(h.id).has(day)).length;
   const all = due.length > 0 && doneN === due.length;
+  // Stempelkarte: die Zahl der Stempel ist die Überschrift des Tages
   const prog = !due.length ? 'Nichts fällig'
-    : all ? 'Alles erledigt'
-    : `${doneN} von ${due.length} erledigt`;
+    : all ? `<b class="num">${doneN} von ${due.length}</b> alles gestempelt`
+    : `<b class="num">${doneN} von ${due.length}</b> gestempelt`;
   const row = (h) => habitRow(h, setOf(h.id), day, t);
   // Ist heute gar nichts fällig, wäre die Seite sonst leer — dann gleich aufklappen.
   const ndOpen = notDueOpen || !due.length;
@@ -499,7 +500,7 @@ function renderHeute() {
                    : `<p class="nothing">${dayOffset ? 'An diesem Tag' : 'Heute'} ist nichts fällig.</p>`}
       ${rest.length ? `
         <button class="nd-toggle" data-act="notdue" aria-expanded="${ndOpen}">${ICON_MORE}
-          ${dayOffset ? 'Nicht fällig' : 'Heute nicht fällig'} · ${rest.length}</button>
+          ${dayOffset ? 'Nicht fällig' : 'Heute nicht dran'} (${rest.length})</button>
         ${ndOpen ? `<div class="hlist nd">${rest.map(row).join('')}</div>` : ''}` : ''}
       ${noteRow(numToKey(day))}
     </div>`;
@@ -522,23 +523,27 @@ function habitRow(h, set, day, t) {
   const s = currentStreak(h, set, t);
   const sub = [];
   if (s > 0) {
-    sub.push(ICON_FLAME + (h.freq === 'weekly'
+    sub.push('Serie ' + (h.freq === 'weekly'
       ? `${s} ${s === 1 ? 'Woche' : 'Wochen'}`
       : `${s} ${s === 1 ? 'Tag' : 'Tage'}`));
   }
   if (h.freq === 'weekly') {
     const w = mondayOf(day);
-    sub.push(`${weekCount(set, w)}/${h.target} ${w === mondayOf(t) ? 'diese' : 'letzte'} Woche`);
+    sub.push(`${weekCount(set, w)} von ${h.target} ${w === mondayOf(t) ? 'diese' : 'letzte'} Woche`);
   }
+  // Die letzten sieben Tage als Punktreihe, der gezeigte Tag ganz rechts
+  let week = '';
+  for (let i = 6; i >= 0; i--) week += `<i class="${set.has(day - i) ? 'on' : ''}"></i>`;
   return `
     <button class="hrow${done ? ' done' : ''}${justToggled === h.id ? ' just' : ''}" data-toggle="${esc(h.id)}"
       style="--c:var(--hc-${esc(h.color)})" aria-pressed="${done}">
       <span class="hdot"></span>
       <span class="htext">
         <span class="hname">${esc(h.name)}</span>
-        ${sub.length ? `<span class="hsub">${sub.join(' · ')}</span>` : ''}
+        ${sub.length ? `<span class="hsub">${sub.join(', ')}</span>` : ''}
       </span>
       <span class="chk">${ICON_CHK}</span>
+      <span class="h7" aria-hidden="true">${week}</span>
     </button>`;
 }
 
@@ -880,7 +885,7 @@ function saveHabit() {
   form = null;
   leaveForm();
   render();
-  if (first) toast('Antippen hakt ab · lange drücken bearbeitet · wischen blättert', 4500);
+  if (first) toast('Antippen stempelt, lange drücken bearbeitet, wischen blättert', 4500);
   else toast(existing ? 'Gesichert' : 'Angelegt');
 }
 
